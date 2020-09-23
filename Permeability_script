@@ -1,0 +1,429 @@
+clc
+clear
+close all
+
+%%EXPERIMENTAL PART 
+%% Data plotting
+load data_from_excel.mat
+one_dir_1=dataexcel(:,1:2); % meters
+time_one_dir_1=one_dir_1(:,1);
+value_one_dir_1=one_dir_1(:,2)/100;
+
+one_dir_2=dataexcel(:,3:4);
+time_one_dir_2=one_dir_2(:,1);
+value_one_dir_2=one_dir_2(:,2)/100;
+
+two_dir=dataexcel(:,5:6);
+time_two_dir=two_dir(:,1);
+value_two_dir=two_dir(:,2)/100;
+
+fortyfive_dir=dataexcel(:,7:8);
+time_fortyfive_dir=fortyfive_dir(:,1);
+value_fortyfive_dir=fortyfive_dir(:,2)/100;
+
+figure
+
+plot(time_one_dir_1(:),value_one_dir_1(:),'r*');
+xlabel ('Time [s]');
+ylabel ('Flow front position [mm]');
+%title ('1-direction')
+
+figure
+plot(time_one_dir_2(:),value_one_dir_2(:),'b*');
+xlabel ('Time [s]');
+ylabel ('Flow front position [mm]');
+%title ('1-direction 2')
+
+figure
+plot(time_two_dir(:),value_two_dir(:),'k*');
+xlabel ('Time [s]');
+ylabel ('Flow front position [mm]');
+%title ('2-direction')
+
+figure
+plot(time_fortyfive_dir(:),value_fortyfive_dir(:),'m*');
+xlabel ('Time [s]');
+ylabel ('Flow front position [mm]');
+%title ('45-direction')
+
+
+%% data analysis
+
+R0 = 12.5*10^-3; %Inner radius [m]
+P = 0.2*10^5; %Pressure [Pa]
+vf = 0.4; %Fiber volume fraction
+mu = 40*10^-3; %Liquid viscosity [Pa s]
+
+syms k
+%1_dir 1
+Rf11 = value_one_dir_1(1:21); % [m]
+t11 = time_one_dir_1(1:21); %Time [s]
+for i = 1 : length(Rf11(:,1))
+        
+        
+eqn1 = ((Rf11(i)/R0)^2)*(2*log(Rf11(i)/R0)-1)+1 == (4*k*P*t11(i))/((1-vf)*mu*R0^2);
+k1(i) = double(solve(eqn1,k));
+
+end
+figure
+plot(t11,k1,'r','Linewidth',3)
+title ('Permeability in 1-direction');
+xlabel ('Time [s]');
+ylabel ('Permeability [m^2]')
+hold on
+yline(mean(k1(2:21)),'Linewidth',3) 
+grid on
+
+%1_dir 2
+Rf12 = value_one_dir_2; %[m]
+t12 = time_one_dir_2; %Time [s]
+for i = 1 : length(Rf12(:,1))
+        
+        
+eqn2 = ((Rf12(i)/R0)^2)*(2*log(Rf12(i)/R0)-1)+1 == (4*k*P*t12(i))/((1-vf)*mu*R0^2);
+k2(i) = double(solve(eqn2,k));
+
+end
+
+figure
+plot(t12,k2,'b','Linewidth',3)
+title ('Permeability in 1-direction n°2');
+xlabel ('Time [s]');
+ylabel ('Permeability [m^2]')
+hold on
+yline(mean(k2(2:22)),'Linewidth',3) 
+grid on
+
+%2_dir
+Rf2 = value_two_dir(1:17); % [m]
+t2 = time_two_dir(1:17); %Time [s]
+for i = 1 : length(Rf2(1:17,1))
+        
+        
+eqn22 = ((Rf2(i)/R0)^2)*(2*log(Rf2(i)/R0)-1)+1 == (4*k*P*t2(i))/((1-vf)*mu*R0^2);
+k22(i) = double(solve(eqn22,k));
+
+end
+
+figure
+plot(t2,k22,'m','Linewidth',3)
+title ('Permeability in 2-direction');
+xlabel ('Time [s]');
+ylabel ('Permeability [m^2]')
+hold on
+yline(mean(k22(2:17)),'Linewidth',3) 
+grid on
+
+%45_dir
+Rf45 = value_fortyfive_dir(1:21); % [m]
+t45 = time_fortyfive_dir(1:21); %Time [s]
+for i = 1 : length(Rf45(:,1))
+        
+        
+eqn45 = ((Rf45(i)/R0)^2)*(2*log(Rf45(i)/R0)-1)+1 == (4*k*P*t45(i))/((1-vf)*mu*R0^2);
+k45(i) = double(solve(eqn45,k));
+
+end
+
+figure
+plot(t45,k45,'k','Linewidth',3)
+title ('Permeability in 45-direction');
+xlabel ('Time [s]');
+ylabel ('Permeability [m^2]')
+hold on
+yline(mean(k45(2:17)),'Linewidth',3) 
+grid on
+
+K = [mean(k1(2:21)),mean(k2(2:22)),mean(k22(2:17)),mean(k45(2:21))]  %m^2
+
+
+%% Error analysis
+
+%% 1) change in viscosity
+
+mu_v = [30*10^-3,35*10^-3,40*10^-3,45*10^-3,50*10^-3]; %Liquid viscosity [Pa s]
+
+
+% 1_dir-1
+figure
+for i = 1 : length(Rf11(:,1))       
+    for j = 1 : length(mu_v)
+            eqn11(j) = ((Rf11(i)/R0)^2)*(2*log(Rf11(i)/R0)-1)+1 == (4*k*P*t11(i))/((1-vf)*mu_v(j)*R0^2);
+            k_11(i,j) = double(solve(eqn11(j),k));
+    end
+end
+for j= 1: length(mu_v)
+            hold on
+            grid on
+            plot(t11,k_11(:,j),'Linewidth',2)
+end
+title ('Effect of fluid viscosity ')
+xlabel ('Time [s]')
+ylabel ('Permeability [m^2]')
+legend({'\mu =30 mPa s','\mu =35 mPa s','\mu =40 mPa s','\mu =45 mPa s','\mu =50 mPa s'},'Location','northwest','NumColumns',2);
+K_visc11 = [mean(k_11(2:21,1)),mean(k_11(2:21,2)),mean(k_11(2:21,3)),mean(k_11(2:21,4)),mean(k_11(2:21,5))]  %m^2
+
+
+% 2_dir-1
+for i = 1 : length(Rf12(:,1))       
+    for j = 1 : length(mu_v)
+            eqn12(j) = ((Rf12(i)/R0)^2)*(2*log(Rf12(i)/R0)-1)+1 == (4*k*P*t12(i))/((1-vf)*mu_v(j)*R0^2);
+            k_12(i,j) = double(solve(eqn12(j),k));
+    end
+end
+K_visc12 = [mean(k_12(2:22,1)),mean(k_12(2:22,2)),mean(k_12(2:22,3)),mean(k_12(2:22,4)),mean(k_12(2:22,5))]  %m^2
+
+% dir-2
+for i = 1 : length(Rf2(:,1))       
+    for j = 1 : length(mu_v)
+eqn2(j) = ((Rf2(i)/R0)^2)*(2*log(Rf2(i)/R0)-1)+1 == (4*k*P*t2(i))/((1-vf)*mu_v(j)*R0^2);
+k_2(i,j) = double(solve(eqn2(j),k));
+
+    end
+end
+K_visc2 = [mean(k_2(2:17,1)),mean(k_2(2:17,2)),mean(k_2(2:17,3)),mean(k_2(2:17,4)),mean(k_2(2:17,5))]  %m^2
+
+% dir-45
+for i = 1 : length(Rf45(:,1))       
+    for j = 1 : length(mu_v)
+eqn45(j) = ((Rf45(i)/R0)^2)*(2*log(Rf45(i)/R0)-1)+1 == (4*k*P*t45(i))/((1-vf)*mu_v(j)*R0^2);
+k_45(i,j) = double(solve(eqn45(j),k));
+
+    end
+end
+K_visc45 = [mean(k_45(2:21,1)),mean(k_45(2:21,2)),mean(k_45(2:21,3)),mean(k_45(2:21,4)),mean(k_45(2:21,5))]  %m^2
+
+%% 2) Pressure oscillation
+
+
+P_v = [0.15*10^5,0.2*10^5,0.25*10^5]; %pressure[bar]
+
+
+% 1_dir-1
+figure
+for i = 1 : length(Rf11(:,1))       
+    for j = 1 : length(P_v)
+            eqn11(j) = ((Rf11(i)/R0)^2)*(2*log(Rf11(i)/R0)-1)+1 == (4*k*P_v(j)*t11(i))/((1-vf)*mu*R0^2);
+            k_11(i,j) = double(solve(eqn11(j),k));
+            
+            
+    end
+end
+for j= 1: length(P_v)
+            hold on
+            grid on
+            plot(t11,k_11(:,j),'Linewidth',2)
+end
+title ('Effect of pression changes ')
+xlabel ('Time [s]')
+ylabel ('Permeability [m^2]')
+legend({'P =0.15 bar','P =0.2 bar','P =0.25 bar'},'Location','northwest','NumColumns',1);
+
+K_press11 = [mean(k_11(2:21,1)),mean(k_11(2:21,2)),mean(k_11(2:21,3))]  %m^2
+
+
+% 2_dir-1
+
+for i = 1 : length(Rf12(:,1))       
+    for j = 1 : length(P_v)
+            eqn12(j) = ((Rf12(i)/R0)^2)*(2*log(Rf12(i)/R0)-1)+1 == (4*k*P_v(j)*t12(i))/((1-vf)*mu*R0^2);
+            k_12(i,j) = double(solve(eqn12(j),k));
+    end
+end
+K_press12 = [mean(k_12(2:22,1)),mean(k_12(2:22,2)),mean(k_12(2:22,3))]  %m^2
+
+% dir-2
+for i = 1 : length(Rf2(:,1))       
+    for j = 1 : length(P_v)
+eqn2(j) = ((Rf2(i)/R0)^2)*(2*log(Rf2(i)/R0)-1)+1 == (4*k*P_v(j)*t2(i))/((1-vf)*mu*R0^2);
+k_2(i,j) = double(solve(eqn2(j),k));
+
+    end
+end
+K_press2 = [mean(k_2(2:17,1)),mean(k_2(2:17,2)),mean(k_2(2:17,3))]  %m^2
+
+% dir-45
+for i = 1 : length(Rf45(:,1))       
+    for j = 1 : length(P_v)
+eqn45(j) = ((Rf45(i)/R0)^2)*(2*log(Rf45(i)/R0)-1)+1 == (4*k*P_v(j)*t45(i))/((1-vf)*mu*R0^2);
+k_45(i,j) = double(solve(eqn45(j),k));
+
+    end
+end
+K_press45 = [mean(k_45(2:21,1)),mean(k_45(2:21,2)),mean(k_45(2:21,3))]  %m^2
+
+
+%% 3) Volume fraction oscillation
+
+
+vf_v = [0.3,0.35,0.4,0.45]; %volume fraction
+
+
+% 1_dir-1
+figure
+for i = 1 : length(Rf11(:,1))       
+    for j = 1 : length(vf_v)
+            eqn11(j) = ((Rf11(i)/R0)^2)*(2*log(Rf11(i)/R0)-1)+1 == (4*k*P*t11(i))/((1-vf_v(j))*mu*R0^2);
+            k_11(i,j) = double(solve(eqn11(j),k));
+            
+            
+    end
+end
+for j= 1: length(vf_v)
+            hold on
+            grid on
+            plot(t11,k_11(:,j),'Linewidth',2)
+end
+title ('Effect of volume fraction changes ')
+xlabel ('Time [s]')
+ylabel ('Permeability [m^2]')
+legend({'vf =0.3','vf =0.35','vf=0.4','vf=0.45'},'Location','northwest','NumColumns',2);
+
+K_vf11 = [mean(k_11(2:21,1)),mean(k_11(2:21,2)),mean(k_11(2:21,3)),mean(k_11(2:21,4))]  %m^2
+
+
+% 2_dir-1
+
+for i = 1 : length(Rf12(:,1))       
+    for j = 1 : length(vf_v)
+            eqn12(j) = ((Rf12(i)/R0)^2)*(2*log(Rf12(i)/R0)-1)+1 == (4*k*P*t12(i))/((1-vf_v(j))*mu*R0^2);
+            k_12(i,j) = double(solve(eqn12(j),k));
+    end
+end
+K_vf12 = [mean(k_12(2:22,1)),mean(k_12(2:22,2)),mean(k_12(2:22,3)),mean(k_12(2:22,4))]  %m^2
+
+% dir-2
+for i = 1 : length(Rf2(:,1))       
+    for j = 1 : length(vf_v)
+eqn2(j) = ((Rf2(i)/R0)^2)*(2*log(Rf2(i)/R0)-1)+1 == (4*k*P*t2(i))/((1-vf_v(j))*mu*R0^2);
+k_2(i,j) = double(solve(eqn2(j),k));
+
+    end
+end
+K_vf2 = [mean(k_2(2:17,1)),mean(k_2(2:17,2)),mean(k_2(2:17,3)),mean(k_2(2:17,4))]  %m^2
+
+% dir-45
+for i = 1 : length(Rf45(:,1))       
+    for j = 1 : length(vf_v)
+eqn45(j) = ((Rf45(i)/R0)^2)*(2*log(Rf45(i)/R0)-1)+1 == (4*k*P*t45(i))/((1-vf_v(j))*mu*R0^2);
+k_45(i,j) = double(solve(eqn45(j),k));
+
+    end
+end
+K_vf45 = [mean(k_45(2:21,1)),mean(k_45(2:21,2)),mean(k_45(2:21,3)),mean(k_45(2:21,4))]  %m^2
+
+%% SIMULATION PART
+% UD Lay-up 
+
+% Case A
+
+P = 1*10^5; % Pressure [Pa]
+L = 5; % Length piece [m]
+W = 2.14; % Width piece [m]
+syms t
+eqn = L^2 == (2*(mean(K(1:2)))*P*t)/(mu*(1-vf));
+t_A_UD = double(solve(eqn,t));
+t_A_h_UD = t_A_UD/(60*60)
+
+% Case B
+
+eqn = W^2 == (2*K(1,3)*P*t)/(mu*(1-vf));
+t_B_UD = double(solve(eqn,t));
+t_B_h_UD = t_B_UD/(60*60)
+
+% Case C
+
+eqn = (W/2)^2 == (2*K(1,3)*P*t)/(mu*(1-vf));
+t_C_UD = double(solve(eqn,t));
+t_C_h_UD = t_C_UD/(60*60)
+
+% Case D 
+
+%eq from paper Weitzenbock et al
+alpha=K(1,3)/(mean(K(1:2)));
+x_0=R0*((alpha)^(1/4));
+y_0=R0*((alpha)^(-1/4));
+x_f=2.5*((alpha)^(1/4));
+y_f=1.07*((alpha)^(-1/4));
+
+r_0=sqrt(x_0^2+y_0^2);
+r_f=sqrt(x_f^2+y_f^2);
+
+K_prime_UD = sqrt(K(1,3)*(mean(K(1:2))));
+
+eqn = K_prime_UD ==((r_f^2)*(2*log((r_f)/(r_0))-1)+(r_0^2))*(1/t)*(mu*(1-vf))/(4*P); 
+t_D_UD = double(solve(eqn,t));
+t_D_h_UD = t_D_UD/(60*60)
+
+% coordinate traslation and radial flow eq
+
+rf=2.72; % [m] distance between center and corner
+rot_angleUD= 23; % angle between center and corner
+KUD=[(mean(K(1:2))),0;0,K(1,3)];
+
+c_dUD = cosd(rot_angleUD);
+s_dUD = sind(rot_angleUD);
+T_dUD = [(c_dUD)^2,(s_dUD)^2;(s_dUD)^2,(c_dUD)^2]; %transformation matrix
+
+K_rotUD = T_dUD*KUD*T_dUD';
+
+eqndUD = ((rf^2/R0^2))*(2*log(rf/R0)-1)+1 == (4*K_rotUD(1,1)*P*t)/((1-vf)*mu*R0^2); 
+
+t_D_UD2 = double(solve(eqndUD,t));
+t_D_h_UD2 = t_D_UD2/(60*60)
+
+
+%% QI Lay-up  
+
+theta_layup = [0,45,-45,90]; % QI lay-up
+K_layer=[mean(K(1:2)),0;0,K(3)]; % K1 & K2 layer  
+
+for i=1:length(theta_layup)
+    c = cosd(theta_layup(i));
+    s = sind(theta_layup(i));
+    T = [c^2,s^2;s^2,c^2]; %transformation matrix
+    K_theta(:,:,i) = T*K_layer*T'; % Permeability matrix in global coordinates
+end
+
+K_Homo=(K_theta(:,:,1)+K_theta(:,:,2)+K_theta(:,:,3)+K_theta(:,:,4))/4  % Permaeability matrix lay-up
+
+% Case A  
+
+P_a = 1*10^5; % Pressure [Pa]
+L = 5; % Length piece [m]
+W = 2.14; % Width piece [m]
+syms t
+eqn = L^2 == ((2*P*t)/(mu*(1-vf)))*(K_Homo(1,1)+K_Homo(1,2)*(-K_Homo(2,1)/K_Homo(2,2)));
+t_A_QI = double(solve(eqn,t));
+t_A_h_QI = t_A_QI/(60*60)
+
+% Case B  
+
+eqn = W^2 == ((2*P*t)/(mu*(1-vf)))*(K_Homo(2,2)-(K_Homo(2,1)*K_Homo(1,2)/K_Homo(1,1)));
+t_B_QI = double(solve(eqn,t));
+t_B_h_QI = t_B_QI/(60*60)
+
+% Case C 
+
+eqn = (W/2)^2 == ((2*P*t)/(mu*(1-vf)))*(K_Homo(2,2)-(K_Homo(2,1)*K_Homo(1,2)/K_Homo(1,1)));
+t_C_QI = double(solve(eqn,t));
+t_C_h_QI = t_C_QI/(60*60)
+
+
+% Case D -> 
+
+
+rf=2.72; % [m] distance between center and corner
+rot_angle= 23; % angle between center and corner
+c_d = cosd(rot_angle);
+s_d = sind(rot_angle);
+T_d = [(c_d)^2,(s_d)^2;(s_d)^2,(c_d)^2]; %transformation matrix
+
+K_rot = T_d*K_Homo*T_d';
+
+% With rotation local coordinates and radial flow 
+
+eqnd = ((rf^2/R0^2))*(2*log(rf/R0)-1)+1 == (4*K_rot(1,1)*P*t)/((1-vf)*mu*R0^2); 
+
+t_D_QI = double(solve(eqnd,t));
+t_D_h_QI = t_D_QI/(60*60)
